@@ -16,6 +16,6 @@ from django.core.wsgi import get_wsgi_application
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'chat.settings')
 
 django_app= get_wsgi_application()
-app = get_wsgi_application()
+# app = get_wsgi_application()
 
-application = socketio.WSGIApp(sio, django_app)
+app = socketio.WSGIApp(sio, django_app)
