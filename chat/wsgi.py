@@ -8,14 +8,15 @@ https://docs.djangoproject.com/en/4.1/howto/deployment/wsgi/
 """
 
 import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'chat.settings')
 import socketio
-from api.views import sio
+
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'chat.settings')
+
 
 django_app= get_wsgi_application()
 # app = get_wsgi_application()
-
+from api.views import sio
 app = socketio.WSGIApp(sio, django_app)
