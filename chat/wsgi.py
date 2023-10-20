@@ -19,10 +19,4 @@ from django.core.wsgi import get_wsgi_application
 django_app= get_wsgi_application()
 # app = get_wsgi_application()
 from api.views import sio
-application = socketio.WSGIApp(sio, django_app)
-
-# import eventlet
-
-# import eventlet.wsgi
-
-# eventlet.wsgi.server(eventlet.listen(('', 8000)), app)
+app = socketio.WSGIApp(sio, django_app)
