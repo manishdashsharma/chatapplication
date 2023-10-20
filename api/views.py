@@ -15,7 +15,7 @@ import os
 from django.http import HttpResponse
 import socketio
 
-# basedir = os.path.dirname(os.path.realpath(__file__))
+# # basedir = os.path.dirname(os.path.realpath(__file__))
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
 thread = None
 
@@ -63,7 +63,7 @@ def close_room(sid, message):
              room=message['room'])
     sio.close_room(message['room'])
     
-@sio.event
+# @sio.event
 def message_event(sid, message):
     type = message['type']
     room_id = message['room_id']
@@ -105,13 +105,13 @@ def message_event(sid, message):
         return sio.emit('my_response', {'data': 'Invalid Data', 'sid':sid}, room=message['room'])
 
     
-#   skip_sid=sid,      
+# #   skip_sid=sid,      
 @sio.event
 def disconnect_request(sid):
     sio.disconnect(sid)
 
 
-message=["Hello Everyone", "This is the second message"]
+# message=["Hello Everyone", "This is the second message"]
     
 
 @sio.event
@@ -135,3 +135,100 @@ def connect(sid, environ, query_para):
 @sio.event
 def disconnect(sid):
     print('Client disconnected')
+
+""" WEB RTC SIGNALING SERVER SECTION"""
+
+# Import necessary libraries
+# import socketio
+# import asyncio
+# sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
+# Create a Socket.io server with the /webrtc namespace
+# webrtc_sio = sio.namespace('/webrtc')
+
+# Dictionary to store peer connections
+peer_connections = {}
+
+# @sio.event(namespace='/webrtc')
+# def offer(sid, message):
+#     recipient_sid = message['recipient_sid']
+#     offer = message['offer']
+
+#     # Send the offer to the recipient
+#     # sio.emit('offer', {'offer': offer}, room=recipient_sid, namespace='/webrtc')
+#     sio.emit('offer', {'offer': offer, 'sender_sid': sid}, room=recipient_sid, namespace='/webrtc')
+
+
+# @sio.event(namespace='/webrtc')
+# def answer(sid, message):
+#     # Handle answer message and send it to the sender
+#     sender_sid = message['sender_sid']
+#     answer = message['answer']
+
+#     print(f"Sender is {sender_sid}")
+
+#     # Send the answer to the sender
+#     # sio.emit('receive_answer', answer, room=sender_sid, namespace='/webrtc')
+#     # sio.emit('receive_answer', {'answer': answer}, room=sender_sid, namespace='/webrtc')
+#     sio.emit('receive_answer', {'answer': answer, 'sender_sid': sid}, room=sender_sid, namespace='/webrtc')
+
+
+# @sio.event(namespace='/webrtc')
+# def ice_candidate(sid, message):
+#     # Handle ICE candidate message and send it to the other peer
+#     recipient_sid = message['recipient_sid']
+#     ice_candidate = message['ice_candidate']
+
+#     # Send the ICE candidate to the recipient
+#     # sio.emit('receive_ice_candidate', ice_candidate, room=recipient_sid, namespace='/webrtc')
+#     sio.emit('receive_ice_candidate', {'ice_candidate': ice_candidate, 'sender_sid': sid}, room=recipient_sid, namespace='/webrtc')
+
+# Define a handler for when a client connects to the /webrtc namespace
+@sio.event(namespace='/webrtc')
+def connect(sid, environ, query_para):
+    print(f"Client {sid} connected to /webrtc namespace")
+    sio.emit('my_response', {'sid': sid,})
+    print(sid)
+
+# Define a handler for when a client disconnects from the /webrtc namespace
+@sio.event(namespace='/webrtc')
+def disconnect(sid):
+    # Cleanup and remove the peer connection data
+    if sid in peer_connections:
+        recipient_sid = peer_connections[sid]["recipient_sid"]
+        if recipient_sid in peer_connections:
+            # Notify the recipient about the disconnect
+            sio.emit('peer_disconnected', room=recipient_sid, namespace='/webrtc')
+            del peer_connections[recipient_sid]
+        del peer_connections[sid]
+    print(f"Client {sid} disconnected from /webrtc namespace")
+
+
+# Handle offer messages
+@sio.event(namespace='/webrtc')
+def offer(sid, message):
+    recipient_sid = message['recipient_sid']
+    offer = message['offer']
+
+    # Store the offer in the peer_connections dictionary
+    peer_connections[sid] = {"recipient_sid": recipient_sid, "offer": offer}
+
+    # Forward the offer to the recipient
+    sio.emit('offer', {'offer': offer, 'sender_sid': sid}, room=recipient_sid, namespace='/webrtc')
+
+# Handle answer messages
+@sio.event(namespace='/webrtc')
+def answer(sid, message):
+    sender_sid = message['sender_sid']
+    answer = message['answer']
+
+    # Forward the answer to the sender
+    sio.emit('receive_answer', {'answer': answer, 'sender_sid': sid}, room=sender_sid, namespace='/webrtc')
+
+@sio.event(namespace='/webrtc')
+def ice_candidate(sid, message):
+    recipient_sid = message['recipient_sid']
+    ice_candidate = message['ice_candidate']
+
+    # Forward the ICE candidate to the recipient
+    sio.emit('receive_ice_candidate', {'ice_candidate': ice_candidate, 'sender_sid': sid}, room=recipient_sid, namespace='/webrtc')
+
